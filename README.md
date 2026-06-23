@@ -1,162 +1,215 @@
-# VarGuid: Variance Guided Regression Models for Heteroscedastic Data
+# {varguid}: Variance-Guided Regression Improving Upon OLS and ANOVA for Python
 
-[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
-[![License: GPL v2+](https://img.shields.io/badge/License-GPL%20v2+-blue.svg)](https://www.gnu.org/licenses/gpl-2.0)
+`varguid` is a Python implementation of the **stage-1** variance-guided
+regression method described in:
 
-A Python implementation of advanced regression techniques to address heteroscedasticity in linear models. This package is a Python port of the original R package `varGuid` by Sibei Liu and Min Lu.
+> Liu S. and Lu M. (2026). *Variance-Guided Regression for Heteroscedastic
+> Data with a Grouping-Based Extension for Nonlinear Prediction*.
+> **Statistics in Medicine** 45(13-14):e70632.
+> DOI: 10.1002/sim.70632.
+
+The package implements the global linear mean-variance model from Section 2 of
+the paper and mirrors the stage-1 scope of the attached R package `varGuid`
+0.1.5. The grouping-based nonlinear extension from Section 3 is not included.
 
 ## Features
 
-The package implements the following algorithm:
-
-1. **Iteratively Reweighted Least Squares (IRLS)**: Robust coefficient estimation under linear variance patterns
-
-## Original Authors & Research
-
-**Original R Package Authors:**
-- **Sibei Liu** - PhD Student in Biostatistics, University of Miami (sxl4188@miami.edu)
-- **Min Lu** - Research Associate Professor, University of Miami (m.lu6@umiami.edu)
-
-**Python Implementation:**
-- **Zihao Wang** - PhD Student in Biostatistics, University of Miami (zxw832@miami.edu)
-
-## Reference
-
-Liu S. and Lu M. (2025) Variance guided regression models for heteroscedastic data (under review)
-
-## Acknowledgments
-
-This Python package is a port of the original R package [`varGuid`](https://github.com/luminwin/varGuid) developed by Sibei Liu and Min Lu at the University of Miami. The Python implementation maintains the same methodology and algorithms while adapting to the Python scientific computing ecosystem.
-
-**Original R Package**: https://github.com/luminwin/varGuid
+- Iteratively reweighted least squares for non-sparse fits.
+- Iteratively reweighted lasso using scikit-learn.
+- Baseline and variance-guided prediction from the same fitted result.
+- Weighted least-squares and HC0-HC3 coefficient summaries for non-lasso fits.
+- Matrix, pandas DataFrame, Patsy formula, and scikit-learn-style interfaces.
+- Packaged `cobra2d` data and a reproducible synthetic-data generator.
 
 ## Installation
 
-### Prerequisites
-
-The package requires Python 3.8+ and depends on several scientific computing libraries:
+`varguid` 0.1.8 requires Python 3.12 or newer.
 
 ```bash
-pip install numpy scipy scikit-learn pandas matplotlib cvxpy statsmodels
+python -m pip install varguid
 ```
 
-### Install VarGuid
+For local development:
 
-#### Option 1: Install from PyPI (when available)
 ```bash
-pip install varguid
+python -m pip install -e ".[dev]"
 ```
 
-#### Option 2: Install from source
-```bash
-git clone https://github.com/zionwzz/varGuid-py.git
-cd varGuid-py
-pip install -e .
-```
-
-## Quick Start
+## Quick start
 
 ```python
-import numpy as np
-from varguid import VarGuidRegressor, load_cobra2d
-from varguid.utils.helpers import train_test_split_by_indices, create_feature_target_split
+from varguid import lmv, load_cobra2d
 
-# Load example dataset
-dataset = load_cobra2d()
-data = dataset['data']
+# Packaged data from the attached R release
+data = load_cobra2d()
+train = data.iloc[:-200].copy()
+y = train["y"]
+X = train.drop(columns="y")
 
-# Split into train/test sets
-train_data, test_data, _, _ = train_test_split_by_indices(data, test_size=0.4, random_state=1)
-X_train, y_train = create_feature_target_split(train_data)
-X_test, y_test = create_feature_target_split(test_data)
+fit = lmv(X, y, M=10, lasso=False)
 
-# Step 1: Fit VarGuid regression with IRLS
-varguid_model = VarGuidRegressor(max_iter=10, use_lasso=False)
-varguid_model.fit(X_train.values, y_train.values)
+baseline_pred = fit.predict(X, model="baseline")
+varguid_pred = fit.predict(X, model="varGuid")
 
-# View results
-print("VarGuid Coefficients:")
-results = varguid_model.get_inference_results()
-print(results['coefficients'])
-
-# Make predictions
-y_pred = varguid_model.predict(X_test.values)
-rmse = np.sqrt(np.mean((y_test.values - y_pred) ** 2))
-print(f"RMSE: {rmse:.4f}")
+print(fit.beta[:5])
+print(baseline_pred[:3])
+print(varguid_pred[:3])
+print(fit.summary_frame(cov_type="HC3").head())
 ```
 
-## Advanced Usage
-
-### Using Lasso Regularization
+The top-level helper has the same behavior:
 
 ```python
-# Fit VarGuid with Lasso regularization
-varguid_lasso = VarGuidRegressor(
-    max_iter=10,
-    use_lasso=True,
-    alpha=1.0,
-    cv_folds=5
+from varguid import predict
+
+varguid_pred = predict(fit, X, model="varGuid")
+```
+
+The R-compatible `prd()` name remains available as a deprecated alias.
+
+## Sparse fit
+
+```python
+from varguid import lmv, load_cobra2d
+
+data = load_cobra2d().iloc[:120]
+X = data.drop(columns="y")
+y = data["y"]
+
+fit = lmv(
+    X,
+    y,
+    M=3,
+    lasso=True,
+    cv_folds=5,
+    rng=42,
 )
-varguid_lasso.fit(X_train.values, y_train.values)
+pred = fit.predict(X, model="varGuid")
+print(fit.beta)
+print(pred[:3])
 ```
 
-## API Reference
+The lasso implementation standardizes predictors and uses shuffled,
+reproducible cross-validation folds. It follows the R package's high-level
+procedure but uses scikit-learn rather than `glmnet`, so sparse coefficients
+are not expected to be bit-for-bit identical across languages.
 
-### Core Classes
+The functional API follows Scientific Python SPEC 7: pass an integer or a
+`numpy.random.Generator` through `rng`. The older `random_state` keyword is
+accepted with a deprecation warning. `VarGuidRegressor` retains
+`random_state`, as expected by scikit-learn estimators.
 
-#### `VarGuidRegressor`
+## Formula interface
 
-Main regression class implementing the VarGuid method.
+```python
+from varguid import lmv_formula, load_cobra2d
 
-**Parameters:**
-- `max_iter` (int): Maximum number of IRLS iterations (default: 10)
-- `step` (float): Scale parameter for data weights (default: 1.0)
-- `tol` (float): Convergence tolerance (default: 1e-10)
-- `use_lasso` (bool): Use Lasso regularization instead of OLS (default: False)
-- `alpha` (float): Lasso regularization strength (default: 1.0)
-- `cv_folds` (int): Cross-validation folds for Lasso (default: 10)
+data = load_cobra2d()
+fit = lmv_formula("y ~ x1 + x2 + x3 + x4 + x5", data=data, M=5)
+pred = fit.predict(data.iloc[:5])
+print(fit.summary())
+```
 
-**Methods:**
-- `fit(X, y)`: Fit the model
-- `predict(X)`: Make predictions
-- `get_inference_results()`: Get coefficient estimates and diagnostics
+No-intercept formulas are honored:
 
+```python
+fit_no_intercept = lmv_formula("y ~ 0 + x1 + x2 + x3", data=data, M=5)
+```
 
-### Utility Functions
+Formula-based prediction expects a DataFrame containing the original formula
+variables. Patsy reconstructs transformations and categorical encodings from
+the fitted design information.
 
-#### Data Functions
-- `load_cobra2d()`: Load the cobra2d example dataset
-- `generate_cobra2d(n_samples, n_features, ...)`: Generate cobra2d dataset with custom parameters
+## Scikit-learn estimator
 
-#### Helper Functions
-- `train_test_split_by_indices(data, test_size, random_state)`: Split data using random indices
-- `create_feature_target_split(data, target_column)`: Separate features and target
-- `evaluate_predictions(y_true, predictions_dict)`: Compute RMSE for multiple methods
-- `compute_rmse(y_true, y_pred)`: Compute Root Mean Square Error
+```python
+from varguid import VarGuidRegressor, load_cobra2d
 
-### Getting Help
+data = load_cobra2d()
+X = data.drop(columns="y")
+y = data["y"]
 
-- **Issues**: Report bugs on [GitHub Issues](https://github.com/zionwzz/varGuid-py/issues)
-- **Discussions**: Ask questions in [GitHub Discussions](https://github.com/zionwzz/varGuid-py/discussions)
+model = VarGuidRegressor(max_iter=5, use_lasso=False)
+model.fit(X, y)
+pred = model.predict(X.iloc[:5])
+print(model.summary_frame(cov_type="HC1").head())
+```
 
-## License
+The estimator records `n_features_in_`, raises `NotFittedError` before fitting,
+and passes scikit-learn's estimator checks. For DataFrame fits, prediction
+columns are reordered to the fitted order; missing or unexpected columns are
+rejected rather than silently producing incorrect predictions.
 
-This project is licensed under the GNU General Public License v2.0 or later (GPL-2.0-or-later). See the [LICENSE](LICENSE) file for details.
+## Reproducibility and R compatibility
+
+The non-lasso update order follows the attached R `R/irls.R` implementation,
+including the model update that occurs before the convergence branch. Fitted
+variance values are not clipped. A numerically exact zero-variance fit receives
+a safe uniform-weight fallback instead of producing non-finite values.
+
+The automated tests include an independent translation of the attached R
+non-lasso algorithm, direct statsmodels comparisons, lasso reproducibility and
+scale-invariance checks, formula tests, DataFrame schema tests, README example
+execution, and the full scikit-learn estimator contract.
+
+## Development checks
+
+```bash
+python -m pytest
+ruff check src tests
+ruff format --check src tests
+mypy src tests
+check-manifest
+python -m build
+python -m twine check dist/*
+```
+
+Equivalent `nox` sessions are available:
+
+```bash
+nox -s tests lint build
+```
+
+See `FIX_LOG_0.1.8.md` and `VALIDATION_LOG_0.1.8.txt` for the release audit.
+
+## Publishing
+
+The release workflow builds distributions in a separate job and publishes from
+a protected `pypi` GitHub environment through PyPI Trusted Publishing. See
+`RELEASING.md` for the one-time repository configuration and release steps.
 
 ## Citation
 
-If you use this software in your research, please cite the original paper:
+If you use `varguid`, please cite both the Python software and the method paper.
+The root-level `CITATION.cff` file is the authoritative machine-readable
+software citation. The version-specific DOI for `varguid` 0.1.8 is
+https://doi.org/10.5281/zenodo.20816141.
+
+### Python software
 
 ```bibtex
-@article{liu2025varguid,
-  title={Variance guided regression models for heteroscedastic data},
-  author={Liu, Sibei and Lu, Min},
-  journal={Under review},
-  year={2025}
+@software{wang_lu_2026_varguid_python,
+  author    = {Wang, Zihao and Lu, Min},
+  title     = {{varguid}: Variance-Guided Regression Improving Upon OLS and ANOVA for Python},
+  version   = {0.1.8},
+  year      = {2026},
+  publisher = {Zenodo},
+  doi       = {10.5281/zenodo.20816141},
+  url       = {https://doi.org/10.5281/zenodo.20816141}
 }
 ```
 
-## Contact
+### Method paper
 
-- **Python Implementation**: Zihao Wang (zxw832@miami.edu)
-- **Original R Package & Research**: Sibei Liu (sxl4188@miami.edu), Min Lu (m.lu6@umiami.edu)
+```bibtex
+@article{liu_lu_2026_varguid,
+  author  = {Liu, Sibei and Lu, Min},
+  title   = {Variance-Guided Regression for Heteroscedastic Data With a Grouping-Based Extension for Nonlinear Prediction},
+  journal = {Statistics in Medicine},
+  volume  = {45},
+  number  = {13-14},
+  pages   = {e70632},
+  year    = {2026},
+  doi     = {10.1002/sim.70632}
+}
+```
