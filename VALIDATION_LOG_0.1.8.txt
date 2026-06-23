@@ -1,0 +1,101 @@
+varGuid Python 0.1.8 validation log
+==================================
+Audit date: 2026-06-22
+
+Inputs reviewed
+---------------
+- Python source archive: varguid_py_0.1.7_source.zip
+- R source package: varGuid_0.1.5.tar.gz
+- R parity source files: R/irls.R and R/add.R
+
+Release target
+--------------
+- Distribution name: varguid
+- Version: 0.1.8
+- Requires Python: >=3.12
+- Local interpreter: CPython 3.13.5
+- Local platform: Linux x86_64, glibc 2.41
+
+Current-dependency validation environment
+-----------------------------------------
+numpy==2.2.4
+pandas==3.0.3
+scipy==1.18.0
+scikit-learn==1.9.0
+statsmodels==0.14.6
+patsy==1.0.2
+pytest==9.1.1
+ruff==0.15.18
+mypy==2.1.0
+build==1.5.0
+twine==6.2.0
+check-manifest==0.51
+
+Minimum-dependency validation environment
+-----------------------------------------
+numpy==2.1.0
+pandas==2.3.0
+scipy==1.15.0
+scikit-learn==1.6.0
+statsmodels==0.14.4
+patsy==1.0.1
+pytest==8.3.5
+
+Validation results
+------------------
+PASS  pytest: 32 tests on the current-dependency environment.
+PASS  pytest with DeprecationWarning treated as an error.
+PASS  pytest: 32 tests on the exact declared minimum core dependencies.
+PASS  branch-aware coverage: 85% overall.
+PASS  full sklearn.utils.estimator_checks.check_estimator contract.
+      scikit-learn skipped only check_array_api_input because SCIPY_ARRAY_API
+      was not enabled in the validation environment.
+PASS  all six README Python code blocks executed verbatim.
+PASS  independent non-lasso translation of the attached R update procedure.
+PASS  statsmodels coefficient, prediction, and robust-summary comparisons.
+PASS  DataFrame schema reorder and mismatch regression tests.
+PASS  Patsy intercept, transform, categorical, and missing-value tests.
+PASS  lasso reproducibility and predictor-unit invariance tests.
+PASS  Scientific Python rng path and deprecated random_state transition tests.
+PASS  Ruff lint and Ruff format checks.
+PASS  mypy: no issues in 9 source/test files.
+PASS  TOML and YAML parsing; all workflow actions pinned to full 40-character
+      commit SHAs.
+PASS  end-of-file, trailing-whitespace, and added-large-file checks.
+PASS  check-manifest: version-controlled files and the sdist file list match.
+PASS  pip check in the minimum-dependency environment.
+PASS  python -m build for wheel and source distribution.
+PASS  twine check for wheel and source distribution.
+PASS  wheel and sdist archive-content inspection.
+PASS  isolated wheel installation and installed-package smoke test.
+PASS  isolated sdist installation and installed-package smoke test.
+PASS  all six README examples executed against both installed artifacts.
+PASS  returned clean source ZIP extracted, tested, and rebuilt successfully.
+PASS  PEP 561 py.typed marker present in the installed wheel.
+
+Commands used
+-------------
+python -m pytest -W error::DeprecationWarning
+python -m pytest --cov=varguid --cov-report=term
+ruff check src tests
+ruff format --check src tests
+mypy src tests
+check-manifest -v
+python -m build
+python -m twine check dist/*
+python -m pip check
+
+The configured pre-commit repositories could not be bootstrapped in this
+sandbox because outbound GitHub DNS access was unavailable to the command-line
+environment. Every configured hook was run through its local equivalent: Ruff,
+Ruff format, end-of-file, trailing-whitespace, YAML, TOML, and large-file
+checks all passed.
+
+Validation limits
+-----------------
+- Python 3.12 and 3.14 interpreters were not installed locally. Both versions
+  are included in the GitHub Actions CI matrix.
+- No R interpreter was installed locally. Non-lasso parity was verified against
+  an independent Python translation of the attached R source, not by executing
+  R. Lasso fits use scikit-learn rather than glmnet and are intentionally not
+  claimed to be bit-for-bit identical across languages.

@@ -1,0 +1,37 @@
+varguid 0.1.8 publication-metadata validation
+================================================
+
+Validated project title
+-----------------------
+{varguid}: Variance-Guided Regression Improving Upon OLS and ANOVA for Python
+
+Validated canonical repository
+------------------------------
+https://github.com/zionwzz/varguid-python
+
+Citation metadata
+-----------------
+PASS  CITATION.cff validates against Citation File Format schema 1.2.0.
+PASS  CITATION.bib contains the Python software entry and the published method paper.
+PASS  The method DOI is 10.1002/sim.70632.
+INFO  No fabricated or placeholder Zenodo DOI is embedded. A real DOI must be reserved
+      or minted in the owner's Zenodo account before it is added to release metadata.
+
+Package and code validation
+---------------------------
+PASS  pytest: 32 tests passed.
+PASS  ruff check src tests.
+PASS  ruff format --check src tests.
+PASS  mypy 2.1.0: no issues in 9 source files.
+PASS  check-manifest: version-control and sdist file lists match.
+PASS  python -m build: wheel and sdist built successfully.
+PASS  twine check: wheel and sdist passed.
+PASS  Wheel metadata contains the revised title and canonical repository URLs.
+PASS  Sdist contains CITATION.cff, CITATION.bib, publication checklist, and metadata log.
+PASS  Built wheel installs and completes a finite 100-row variance-guided fit.
+
+Release status
+--------------
+This is a pre-DOI publication-ready candidate. The account owner must reserve or mint
+the Zenodo DOI and complete the account-bound GitHub, Zenodo, and PyPI actions described
+in PUBLICATION_CHECKLIST.md.
