@@ -1,0 +1,40 @@
+cff-version: 1.2.0
+message: "If you use varguid, please cite both this software and the method paper listed in references."
+type: software
+title: "{varguid}: Variance-Guided Regression Improving Upon OLS and ANOVA for Python"
+version: 0.1.8
+doi: "10.5281/zenodo.20816141"
+date-released: "2026-06-23"
+authors:
+  - family-names: Wang
+    given-names: Zihao
+  - family-names: Lu
+    given-names: Min
+abstract: >-
+  A Python implementation of variance-guided regression for heteroscedastic
+  data, including baseline and variance-guided linear prediction, optional
+  lasso regularization, formula support, coefficient inference for non-lasso
+  fits, and a scikit-learn-compatible estimator.
+repository-code: "https://github.com/zionwzz/varguid-python"
+url: "https://github.com/zionwzz/varguid-python"
+license: GPL-2.0-or-later
+keywords:
+  - regression
+  - heteroscedasticity
+  - weighted least squares
+  - mean-variance modeling
+  - lasso
+references:
+  - type: article
+    authors:
+      - family-names: Liu
+        given-names: Sibei
+      - family-names: Lu
+        given-names: Min
+    title: "Variance-Guided Regression for Heteroscedastic Data With a Grouping-Based Extension for Nonlinear Prediction"
+    journal: "Statistics in Medicine"
+    volume: 45
+    issue: "13-14"
+    start: e70632
+    year: 2026
+    doi: 10.1002/sim.70632
